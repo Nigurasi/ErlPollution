@@ -24,7 +24,7 @@ addStation(StationName, Coordinates, Monitor) ->
   case findStation(StationName, Monitor)  of
     false -> case findStation(Coordinates, Monitor) of
                false -> [#station {name = StationName, coords = Coordinates} | Monitor];
-                 _ -> {error, "An error occurred while adding a station. There is a station with same coordinates."}
+               _ -> {error, "An error occurred while adding a station. There is a station with same coordinates."}
              end;
     _ -> {error, "An error occurred while adding a station. There is a station with same name."}
   end.
@@ -47,13 +47,15 @@ wellAddValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Valu
   case getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, M) of
     false ->
       [S#station{measurements = [ #measure {date = {{Year, Month, Day}, {Hour, Minutes, Seconds}}, type = Type, value = Value} | M]} | T];
-      _ -> {error, "An error occurred while adding a value. There is a value with these measurements."}
+    _ -> io:format("An error occurred while adding a value. There is a value with these measurements.~n"),
+      [S#station{measurements = M} | T]
   end;
 wellAddValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Value, [#station{coords = Station, measurements = M} = S | T]) ->
   case getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, M) of
     false ->
       [S#station{measurements = [ #measure {date = {{Year, Month, Day}, {Hour, Minutes, Seconds}}, type = Type, value = Value} | M]} | T];
-    _ -> {error, "An error occurred while adding a value. There is a value with these measurements."}
+    _ -> io:format("An error occurred while adding a value. There is a value with these measurements.~n"),
+      [S#station{measurements = M} | T]
   end;
 wellAddValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Value, [H | T]) ->
   [H | wellAddValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Value, T)].
@@ -64,17 +66,19 @@ removeValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Monit
   case findStation(Station, Monitor) of
     false -> {error, "An error occurred while removing a value. There is not a station with this detail."};
     _ -> wellRemoveValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, Monitor)
-end.
+  end.
 
 wellRemoveValue(_, _, _, []) -> [];
 wellRemoveValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, [#station{name = Station, measurements = M} = S | T]) ->
   case getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, M) of
-    false -> {error, "An error occurred while removing a value. There is no value with these measurements."};
-    _ -> [justDoRemoveIt(S, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type) | T ]
+    false -> io:format("An error occurred while removing a value. There is no value with these measurements.~n"),
+      [S#station{measurements = M} | T];
+    _ -> [S#station{measurements = justDoRemoveIt(M, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type)} | T ]
   end;
 wellRemoveValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, [#station{coords = Station, measurements = M} = S | T]) ->
   case getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, M) of
-    false -> {error, "An error occurred while removing a value. There is no value with these measurements."};
+    false -> io:format("An error occurred while removing a value. There is no value with these measurements.~n"),
+      [S#station{measurements = M} | T];
     _ -> [S#station{measurements = justDoRemoveIt(M, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type)} | T ]
   end;
 wellRemoveValue(Station, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, [H | T]) ->
@@ -84,12 +88,12 @@ justDoRemoveIt([], _, _) -> [];
 justDoRemoveIt([#measure{date = {{Year, Month, Day}, {Hour, Minutes, Seconds}}, type = Type} | T], {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type) ->
   T;
 justDoRemoveIt([H | T], {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type) ->
- [H | justDoRemoveIt(T, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type)].
+  [H | justDoRemoveIt(T, {{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type)].
 
 
 getValue(_, _, []) -> false;
-getValue({{Year, Month, Day}, {Hour, _, _}}, Type,
-    [#measure{date = {{Year, Month, Day}, {Hour, _, _}}, type = Type} | _]) -> true;
+getValue({{Year, Month, Day}, {Hour, Minutes, _}}, Type,
+    [#measure{date = {{Year, Month, Day}, {Hour, Minutes, _}}, type = Type} | _]) -> true;
 getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, [_ | T]) ->
   getValue({{Year, Month, Day}, {Hour, Minutes, Seconds}}, Type, T).
 
