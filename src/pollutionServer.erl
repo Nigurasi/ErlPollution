@@ -64,7 +64,10 @@ loop(Monitor) ->
       loop(controlGetting(Monitor, 'Pollution':getDailyMean(Type, {Year, Month, Day}, Monitor), Pid));
     {exportToJson} ->
       io:format("~s~n", ['Pollution':exportToJSON(Monitor)]),
-      loop(Monitor)
+      loop(Monitor);
+    stop ->
+      io:format("Goodbye.~n"),
+      ok
   end.
 
 controlGetting(Monitor, {error, Description}, Pid) ->
